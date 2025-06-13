@@ -4,10 +4,146 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Models\EmailVerification;
+use App\Models\SmsVerification;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class VerificationController extends Controller
 {
-    public function SendEmailVerification(Request $request) {
-        
+    public function verifyCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string',
+            'method' => 'required|in:email,sms',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no encontrado',
+            ], 404);
+        }
+
+        if ($request->method === 'email') {
+            $verification = EmailVerification::where('user_id', $user->id)
+                ->where('code', $request->code)
+                ->whereNull('verified_at')
+                ->where('expires_at', '>', Carbon::now())
+                ->first();
+
+            if (!$verification) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Código inválido o expirado',
+                ], 401);
+            }
+
+            $verification->verified_at = Carbon::now();
+            $verification->save();
+
+            //actualiza el metodo de validacion
+            $user->update([
+                'validation_2FA' => 'email',
+             ]);
+
+        } elseif ($request->method === 'sms') {
+            $verification = SmsVerification::where('user_id', $user->id)
+                ->where('code', $request->code)
+                ->whereNull('verified_at')
+                ->where('expires_at', '>', Carbon::now())
+                ->first();
+
+            if (!$verification) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Código inválido o expirado',
+                ], 401);
+            }
+
+            $verification->verified_at = Carbon::now();
+            $verification->save();
+
+             //  Actualiza el método de validación
+            $user->update([
+                'validation_2FA' => 'sms',
+            ]);
+        }
+
+        //  Emitir token de acceso
+        $user->tokens()->delete();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Código verificado correctamente',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user
+        ]);
     }
+
+    public function sendCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'method' => 'required|in:email,sms',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no encontrado',
+            ], 404);
+        }
+
+        // Eliminar códigos anteriores no verificados
+        if ($request->method === 'email') {
+            EmailVerification::where('user_id', $user->id)->whereNull('verified_at')->delete();
+
+            $code = strtoupper(Str::random(6)); // Código alfanumérico
+            EmailVerification::create([
+                'user_id' => $user->id,
+                'code' => $code,
+                'expires_at' => now()->addMinutes(10),
+            ]);
+
+            // aca usamos Mail::to($user->email)->send(...) si tenemos un Mailable configurado
+            // Simulación:
+            Log::info("Código de verificación por email: $code");
+
+        } elseif ($request->method === 'sms') {
+            if (!$user->phone) {
+                return response()->json(['success' => false, 'message' => 'El usuario no tiene teléfono registrado'], 400);
+            }
+
+            SmsVerification::where('user_id', $user->id)->whereNull('verified_at')->delete();
+
+            $code = rand(100000, 999999); // Solo números
+            SmsVerification::create([
+                'user_id' => $user->id,
+                'phone' => $user->phone,
+                'code' => $code,
+                'expires_at' => now()->addMinutes(5),
+            ]);
+
+            // Simulación:
+            Log::info("Código de verificación por SMS a {$user->phone}: $code");
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Código enviado correctamente'
+        ]);
+    }
+
 }

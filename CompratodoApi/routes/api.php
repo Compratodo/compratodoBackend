@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Auth\SellerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,9 @@ Route::prefix('auth')->group(function () {
 
     //login
     Route::post('/login', [AuthController::class, 'login']);
+
+    Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
+
 
     //rutas protegidas (requieren autenticacion con sanctum )
     Route::middleware('auth:sanctum')->group(function () {
