@@ -7,5 +7,7 @@ use Illuminate\Http\Request;
 
 class VerificationController extends Controller
 {
-    //
+    public function SendEmailVerification(Request $request) {
+        
+    }
 }

@@ -29,6 +29,7 @@ class User extends Authenticatable
         'provider',
         'provider_id',
         'accepted_terms',
+        'validation_2FA',
     ];
 
     /**

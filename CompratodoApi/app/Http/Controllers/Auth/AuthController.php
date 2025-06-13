@@ -15,7 +15,7 @@ class AuthController extends Controller
     {
         // Validar los datos recibidos
         $validator = Validator::make($request->all(),[
-            'email' => 'required|email|',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
@@ -27,11 +27,8 @@ class AuthController extends Controller
             ], 422);
         }
         
-        // $request->validate([
-        //     'email' => 'required|email',
-        //     'password' => 'required|string',
-        // ]);
 
+        
         // Buscar al usuario por email
         $user = User::where('email', $request->email)->first();
 
@@ -51,10 +48,37 @@ class AuthController extends Controller
 
         // Retornar respuesta con token
         return response()->json([
+            'success' => true,
             'message' => 'Inicio de sesión exitoso',
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user
         ]);
     }
+
+    public function logout(Request $request){
+
+          // Revoca el token actual (cerrar sesión del usuario autenticado)
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'sesion cerrada correctamente'
+        ]);
+    }
+
+    public function logoutFromAllDevices(Request $request) {
+
+         // Revocar todos los tokens (cerrar sesión en todos los dispositivos)
+        $request->user()->tokens()->delete();
+
+        return response()->json([
+            'message' => 'sesion cerrada en todos los dispositivos'
+        ]);
+    }
+    public function me(Request $request) {
+
+        return response()->json([
+            'user' => $request->user()
+        ]);
+}
 }
