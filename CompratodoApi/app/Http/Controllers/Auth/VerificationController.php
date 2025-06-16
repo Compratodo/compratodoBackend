@@ -9,7 +9,10 @@ use App\Models\EmailVerification;
 use App\Models\SmsVerification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
+use App\Mail\VerificationCodeMail;
+use Illuminate\Support\Facades\Mail;
+use App\Services\TwilioService;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
@@ -49,10 +52,9 @@ class VerificationController extends Controller
             $verification->verified_at = Carbon::now();
             $verification->save();
 
-            //actualiza el metodo de validacion
-            $user->update([
-                'validation_2FA' => 'email',
-             ]);
+            $user->email_verified_at = Carbon::now();
+            $user->save();
+
 
         } elseif ($request->method === 'sms') {
             $verification = SmsVerification::where('user_id', $user->id)
@@ -117,9 +119,18 @@ class VerificationController extends Controller
                 'expires_at' => now()->addMinutes(10),
             ]);
 
-            // aca usamos Mail::to($user->email)->send(...) si tenemos un Mailable configurado
-            // Simulación:
-            Log::info("Código de verificación por email: $code");
+            $data = [
+                'userName' => $user->name,
+                'verificationCode' => $code,
+                'expiryTime' => '10 minutos',
+                'welcomeMessage' => 'Estás a un paso de verificar tu cuenta.',
+                'mainMessage' => 'Ingresa el siguiente código para completar el proceso de verificación:',
+                'actionUrl' => null,
+                'actionText' => null,
+                'additionalContent' => null,
+            ];
+
+            Mail::to($user->email)->send(new VerificationCodeMail($data));
 
         } elseif ($request->method === 'sms') {
             if (!$user->phone) {
@@ -136,8 +147,20 @@ class VerificationController extends Controller
                 'expires_at' => now()->addMinutes(5),
             ]);
 
-            // Simulación:
-            Log::info("Código de verificación por SMS a {$user->phone}: $code");
+            $phone = $user->phone;
+
+            // Si empieza con "3" y tiene 10 dígitos (formato colombiano típico)
+            if (preg_match('/^3\d{9}$/', $phone)) {
+                $phone = '+57' . $phone;
+}
+
+            $twilio = new TwilioService();
+            $twilio->sendSms($phone, "Tu código de verificación es: $code");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Código enviado por SMS correctamente',
+            ]);
         }
 
         return response()->json([

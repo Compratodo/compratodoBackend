@@ -22,7 +22,15 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(),[
             'email' => 'required|email',
             'password' => 'required|string',
-        ]);
+            ],
+            [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El correo electrónico debe tener un formato válido.',
+
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.string' => 'La contraseña debe ser una cadena de texto.',
+            ]
+        );
 
         if($validator->fails()){
             return response()->json([
@@ -42,6 +50,12 @@ class AuthController extends Controller
                 'message' => 'Credenciales incorrectas',
             ], 401);
         }
+
+         if (is_null($user->email_verified_at)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Debes verificar tu correo antes de iniciar sesión.',
+        ], 403);
 
         //validacion de 2FA
         if ($user->validation_2FA === 'email') {
@@ -96,9 +110,8 @@ class AuthController extends Controller
             ]);
         }
 
-        // Si no hay 2FA, generar el token normal
-
-
+        // Si no hay 2FA, generar el token normal   
+    }
         // Revocar tokens anteriores si quieres (opcional)
         $user->tokens()->delete();
 

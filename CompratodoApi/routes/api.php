@@ -20,8 +20,10 @@ Route::prefix('auth')->group(function () {
 
     //login
     Route::post('/login', [AuthController::class, 'login']);
-
+    // verificar codigo
     Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
+     // reenviar código 
+    Route::post('/send-code', [VerificationController::class, 'sendCode']);
 
 
     //rutas protegidas (requieren autenticacion con sanctum )
