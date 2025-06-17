@@ -13,14 +13,15 @@ class PasswordReset extends Model
     protected $fillable = [
         'user_id',
         'token',
+        'method',
         'expires_at',
         'used_at',
-        'method',
+        
     ];
 
-    protected $casts = [
-        'expires_at' => 'datetime',
-        'used_at' => 'datetime',
+    protected $dates = [
+        'expires_at',
+        'used_at',
     ];
 
     /**

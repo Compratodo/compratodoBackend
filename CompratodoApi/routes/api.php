@@ -7,8 +7,7 @@ use App\Http\Controllers\Auth\SellerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\EmailVerificationController;
-
-
+use App\Http\Controllers\Auth\ForgotPasswordController;
 
 
 Route::prefix('auth')->group(function () {
@@ -16,6 +15,14 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [RegisterController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 
+    //recuperacion de contrasena
+    Route::post('/forgot-password/email', [ForgotPasswordController::class, 'sendResetLinkEmail']);
+
+    //ruta para validar token
+    Route::get('/reset-password/validate', [ForgotPasswordController::class, 'validateToken']);
+
+    //Ruta para guardar nueva contrasena
+    Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
     // Verificación de código de 2FA (SMS, App, etc.) para login
     Route::post('/2fa/verify-code', [VerificationController::class, 'verifyCode']);
