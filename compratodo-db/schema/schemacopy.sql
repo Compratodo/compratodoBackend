@@ -1,4 +1,4 @@
-dbcompratodomigrations-- Tabla de usuarios
+usersusersdbcompratododbcompratodomigrations-- Tabla de usuarios
 CREATE TABLE users (
   id                        BIGINT AUTO_INCREMENT,                              
   name                      VARCHAR(255) NOT NULL,                              

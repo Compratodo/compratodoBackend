@@ -12,6 +12,10 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use App\Models\EmailVerification;
 use App\Models\SmsVerification;
+use App\Mail\TwoFactorCodeMail;
+use Illuminate\Support\Facades\Mail;
+use App\Services\TwilioService;
+use App\Models\TwoFactorCode;
 
 
 class AuthController extends Controller
@@ -50,12 +54,13 @@ class AuthController extends Controller
                 'message' => 'Credenciales incorrectas',
             ], 401);
         }
-
+        //verifica si el email esta verificado 
          if (is_null($user->email_verified_at)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Debes verificar tu correo antes de iniciar sesión.',
         ], 403);
+        }
 
         //validacion de 2FA
         if ($user->validation_2FA === 'email') {
@@ -64,17 +69,22 @@ class AuthController extends Controller
             $code = Str::upper(Str::random(6));
 
             // Eliminar códigos anteriores
-            EmailVerification::where('user_id', $user->id)->delete();
+            TwoFactorCode::where('user_id', $user->id)->whereNull('verified_at')->delete();
 
             // Guardar el nuevo código
-            EmailVerification::create([
+            TwoFactorCode::create([
                 'user_id' => $user->id,
                 'code' => $code,
+                'method' => 'email',
                 'expires_at' => Carbon::now()->addMinutes(10),
             ]);
 
-            // Enviar por correo (esto lo programamos con Mailable más adelante)
-            // Mail::to($user->email)->send(new EnviarCodigoMailable($code));
+            Mail::to($user->email)->send(new TwoFactorCodeMail([
+                'userName' => $user->name,
+                'verificationCode' => $code,
+                'expiryTime' => '10 minutos',
+                'mainMessage' => 'Tu código de verificación 2FA es:',
+            ]));
 
             return response()->json([
                 'success' => true,
@@ -90,17 +100,24 @@ class AuthController extends Controller
             $code = mt_rand(100000, 999999);
 
             // Eliminar códigos anteriores
-            SmsVerification::where('user_id', $user->id)->delete();
+            TwoFactorCode::where('user_id', $user->id)->whereNull('verified_at')->delete();
 
             // Guardar el nuevo código
-            SmsVerification::create([
+            TwoFactorCode::create([
                 'user_id' => $user->id,
                 'code' => $code,
+                'method' => 'sms',
                 'expires_at' => Carbon::now()->addMinutes(10),
             ]);
 
-            // Enviar por SMS (esto lo programamos después)
-            // SmsService::send($user->phone, "Tu código es: $code");
+            $phone = $user->phone;
+
+                if (preg_match('/^3\d{9}$/', $phone)) {
+                    $phone = '+57' . $phone;
+                }
+
+                $twilio = new TwilioService();
+                $twilio->sendSms($phone, "Tu código de verificación 2FA es: $code");
 
             return response()->json([
                 'success' => true,
@@ -111,7 +128,7 @@ class AuthController extends Controller
         }
 
         // Si no hay 2FA, generar el token normal   
-    }
+    
         // Revocar tokens anteriores si quieres (opcional)
         $user->tokens()->delete();
 

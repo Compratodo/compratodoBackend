@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
+
 class RegisterController extends Controller{
 
         public function register(Request $request)
@@ -79,35 +80,14 @@ class RegisterController extends Controller{
                 'accepted_terms' => true,
             ]);
 
-           
-            // Enviar código automáticamente por email
-            $code = strtoupper(Str::random(6)); // Alfanumérico
-            EmailVerification::where('user_id', $user->id)->whereNull('verified_at')->delete();
-            EmailVerification::create([
-                'user_id' => $user->id,
-                'code' => $code,
-                'expires_at' => now()->addMinutes(10),
-            ]);
-
-            $data = [
-                'userName' => $user->name,
-                'verificationCode' => $code,
-                'expiryTime' => '10 minutos',
-                'welcomeMessage' => '¡Gracias por registrarte!',
-                'mainMessage' => 'Usa este código para verificar tu cuenta:',
-                'actionUrl' => null,
-                'actionText' => null,
-                'additionalContent' => null,
-            ];
-
-            Mail::to($user->email)->send(new VerificationCodeMail($data));
-
-
+            app(EmailVerificationController::class)->sendVerificationCode($user->email);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Usuario registrado correctamente',
+                'message' => 'Usuario registrado correctamente, por favor verifica tu correo',
                 'user' => $user
             ], 201);
+            
+
         }
 }

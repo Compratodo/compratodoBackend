@@ -6,27 +6,28 @@ use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Auth\SellerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\EmailVerificationController;
 
 
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 
 
 Route::prefix('auth')->group(function () {
-    //registro
+    // Registro
     Route::post('/register', [RegisterController::class, 'register']);
-
-    //login
     Route::post('/login', [AuthController::class, 'login']);
-    // verificar codigo
-    Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
-     // reenviar código 
-    Route::post('/send-code', [VerificationController::class, 'sendCode']);
 
 
-    //rutas protegidas (requieren autenticacion con sanctum )
+    // Verificación de código de 2FA (SMS, App, etc.) para login
+    Route::post('/2fa/verify-code', [VerificationController::class, 'verifyCode']);
+    Route::post('/2fa/send-code', [VerificationController::class, 'sendCode']);
+
+    // Verificación de email en register
+    Route::prefix('verify/email')->controller(EmailVerificationController::class)->group(function () {
+        Route::post('/send', 'sendCode');
+        Route::post('/check', 'verifyCode');
+    });
+
+    // Rutas protegidas
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/logoutFromAllDevices', [AuthController::class, 'logoutFromAllDevices']);
@@ -36,3 +37,6 @@ Route::prefix('auth')->group(function () {
         Route::post('/seller/update', [SellerController::class, 'update']);
     });
 });
+
+
+
