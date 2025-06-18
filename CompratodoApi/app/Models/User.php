@@ -74,7 +74,7 @@ class User extends Authenticatable
         return $this->hasMany(SmsVerification::class);
     }
 
-    public function securityQuestions(): HasOne
+    public function securityQuestion(): HasOne
     {
         return $this->hasOne(SecurityQuestion::class);
     }
