@@ -47,7 +47,7 @@ class ForgotPasswordController extends Controller
 
 
         //generar URL de recuperacion 
-        $url = url('/reset-password?token=' . $token . '&email=' . urlencode($user->email));
+        $url = env('APP_URL_FRONTEND') . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
 
 
         //enviar correo
@@ -75,7 +75,7 @@ class ForgotPasswordController extends Controller
             ], 404);
         }
 
-        $reset = \App\Models\PasswordReset::where('user_id', $user->id)
+        $reset = PasswordReset::where('user_id', $user->id)
             ->where('token', $request->token)
             ->where('method', 'email')
             ->whereNull('used_at')
