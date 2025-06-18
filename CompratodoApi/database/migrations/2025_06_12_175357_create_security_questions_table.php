@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('security_questions', function (Blueprint $table) {
             $table->id();                                                                     
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('user_id')->unique()->constrained('users')->onDelete('cascade');
             $table->string('question');
             $table->string('answer');
             $table->timestamps(); 

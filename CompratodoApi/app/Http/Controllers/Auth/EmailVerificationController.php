@@ -42,7 +42,22 @@ class EmailVerificationController extends Controller
             return response()->json(['success' => true, 'message' => 'Código enviado al correo']);
         }
 
+        public function resendCode(Request $request) {
+            $request->validate([
+                'email' => 'required|email|exists:users,email'
+            ]);
 
+            $user = User::where('email', $request->email)->first();
+
+            if($user->email_verified_at) {
+                return response()->json([
+                    'success' => false,
+                    'message' =>  'este correo ya esta verificado'
+                ], 400);
+            }
+
+            return $this->sendVerificationCode($request->email);
+        }
 
     public function verifyCode(Request $request)
     {
