@@ -45,6 +45,10 @@ class EmailVerificationController extends Controller
         public function resendCode(Request $request) {
             $request->validate([
                 'email' => 'required|email|exists:users,email'
+            ], [
+                'email.required' => 'El correo electrónico es obligatorio.',
+                'email.email' => 'El correo electrónico debe tener un formato válido.',
+                'email.exists' => 'El correo electrónico no está registrado.',
             ]);
 
             $user = User::where('email', $request->email)->first();
@@ -64,6 +68,11 @@ class EmailVerificationController extends Controller
         $request->validate([
             'email' => 'required|email',
             'code' => 'required|string',
+        ], [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El correo electrónico debe tener un formato válido.',
+            'code.required' => 'El código es obligatorio.',
+            'code.string' => 'El código debe ser una cadena de texto.',
         ]);
 
         $user = User::where('email', $request->email)->firstOrFail();

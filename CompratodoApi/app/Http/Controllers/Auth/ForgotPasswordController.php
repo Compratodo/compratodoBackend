@@ -19,6 +19,9 @@ class ForgotPasswordController extends Controller
     public function sendResetLinkEmail(Request $request) {
         $request->validate([
             'email' => 'required|email'
+        ], [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El correo electrónico debe tener un formato válido.',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -64,6 +67,11 @@ class ForgotPasswordController extends Controller
         $request->validate([
             'token' => 'required|string',
             'email' => 'required|email',
+        ], [
+            'token.required' => 'El token es obligatorio.',
+            'token.string' => 'El token debe ser una cadena de texto.',
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El correo electrónico debe tener un formato válido.',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -84,7 +92,7 @@ class ForgotPasswordController extends Controller
 
         if(!$reset) {
             return response()->json([
-                'success' => true,
+                'success' => false,
                 'message' => 'Token inválido o expirado'
             ], 400);
         } 
@@ -101,6 +109,15 @@ class ForgotPasswordController extends Controller
             'email' => 'required|email',
             'token' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
+        ], [
+            'email.required' => 'El correo electrónico es obligatorio',
+            'email.email' => 'El correro electrónico debe tener un formato válido',
+            'token.required' => 'El token es obligatorio',
+            'token.string' => 'El token debe ser una cadena de texto',
+            'password.required' => 'La contraseña es obligatoria',
+            'password.string' => 'La contraseña debe ser una cadena de texto',
+            'password.min' => 'La contraseña debe tener almenos 8 caracteres',
+            'password.confirmed' => 'La confirmacion de la contraseña no coincide'
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -138,6 +155,42 @@ class ForgotPasswordController extends Controller
     }
 
     /////////////////////////////////////////////////////////////////////////
+    public function verifyIdNumber(Request $request) {
+        $request->validate([
+            'id_number' => 'required|string',
+        ]);
+
+        $user = User::where('id_number', $request->id_number)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró ningún usuario con esa cédula.',
+            ], 404);
+        }
+
+        // Verificar qué métodos tiene disponibles
+        $methods = [];
+
+        if ($user->email) {
+            $methods[] = 'email';
+        }
+
+        if ($user->phone) {
+            $methods[] = 'sms';
+        }
+
+        if ($user->securityQuestion) {
+            $methods[] = 'security_question';
+        }
+
+        return response()->json([
+            'success' => true,
+            'available_methods' => $methods,
+            'user' => $user 
+        ]);
+    }
+
     
     
     //  RECUPERACION POR SMS
@@ -145,6 +198,9 @@ class ForgotPasswordController extends Controller
 
         $request->validate([
             'id_number' => 'required|string',
+        ], [
+            'id_number.required' => 'El número de identificación es obligatorio',
+            'id_number.string' => 'El número de identificación debe ser una cadena de texto'
         ]);
 
         $user = User::where('id_number', $request->id_number)->first();
@@ -190,6 +246,15 @@ class ForgotPasswordController extends Controller
             'id_number' => 'required|string',
             'code' => 'required|string',
             'password' => 'required|string|min:8|confirmed'
+        ], [
+            'id_number.required' => 'El número de identificación es obligatorio',
+            'id_number.string' => 'El número de identificación debe ser una cadena de texto',
+            'code.required' => 'El código es obligatorio',
+            'code.string' => 'El código debe ser una cadena de texto',
+            'password.required' => 'La contraseña es obligatoria',
+            'password.string' => 'La contraseña debe ser una cadena de texto',
+            'password.min' => 'La contraseña debe tener almenos 8 caracteres',
+            'password.confirmed' => 'La confirmación de la contraseña no coincide'
         ]);
 
         $user = User::where('id_number', $request->id_number)->first();
@@ -233,6 +298,9 @@ class ForgotPasswordController extends Controller
     public function getSecurityQuestion(Request $request) {
         $request->validate([
             'id_number' => 'required|string',
+        ], [
+            'id_number.required' => 'El número de identificación es obligatorio',
+            'id_number.string' => 'El número de identificación debe ser una cadena de texto'
         ]);
 
         $user = User::where('id_number', $request->id_number)->first();

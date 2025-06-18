@@ -22,8 +22,11 @@ Route::prefix('auth')->group(function () {
     Route::get('/reset-password/validate', [ForgotPasswordController::class, 'validateToken']);
     //Ruta para guardar nueva contrasena
     Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
-    
 
+    //verification de Id para acceder a metodos de recuperacion 
+    Route::post('/password/verify-id', [ForgotPasswordController::class, 'verifyIdNumber']);
+
+    
     //recuperacion de contrasena por sms (solo si el user tiene id-cedula registrada)
     Route::post('/forgot-password/sms', [ForgotPasswordController::class, 'sendCodeBySms']);
     Route::post('/reset-password/sms', [ForgotPasswordController::class, 'resetPasswordBySms']);
